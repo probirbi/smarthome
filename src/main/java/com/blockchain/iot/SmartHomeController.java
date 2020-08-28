@@ -1,8 +1,14 @@
 package com.blockchain.iot;
 
 import com.blockchain.iot.data.TestData;
-import com.blockchain.iot.model.Block;
 import com.blockchain.iot.model.SmartHome;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -18,12 +25,6 @@ import java.util.List;
 public class SmartHomeController {
 
     List<SmartHome> smartHomes = new ArrayList<SmartHome>();
-
-    List<Block> blockChain = new ArrayList<Block>();
-
-    int prefix = 1;
-
-    String prefixString = new String(new char[prefix]).replace('\0', '0');
 
     @Autowired
     RestTemplate restTemplate;
@@ -38,45 +39,105 @@ public class SmartHomeController {
 
     @GetMapping("/smarthomes")
     public List<SmartHome> getSmartHome() {
-
-        for (int i = 0; i < blockChain.size(); i++) {
-            String previousHash = i == 0 ? "0"
-                    : blockChain.get(i - 1)
-                    .getHash();
-            boolean flag = blockChain.get(i)
-                    .getHash()
-                    .equals(blockChain.get(i)
-                            .calculateBlockHash())
-                    && previousHash.equals(blockChain.get(i)
-                    .getPreviousHash())
-                    && blockChain.get(i)
-                    .getHash()
-                    .substring(0, prefix)
-                    .equals(prefixString);
-            if (flag) {
-                System.out.println("Blocks in the block chain is validated");
-            }
-        }
-        return smartHomes;
+           return smartHomes;
     }
 
     @PostMapping("/smarthomes")
     public String saveSmartHome(@RequestBody SmartHome smartHome) {
         smartHomes.add(smartHome);
-
-        if (blockChain.size() == 0) {
-            Block smartHomeBlock = new Block("This is iotblockchain1 block", smartHome, "0", new Date().getTime());
-            smartHomeBlock.mineBlock(prefix);
-            blockChain.add(smartHomeBlock);
-        } else {
-            Block smartHomeBlock = new Block("This is iotblockchain1 block", smartHome, blockChain.get(blockChain.size() - 1).getHash(), new Date().getTime());
-            smartHomeBlock.mineBlock(prefix);
-            blockChain.add(smartHomeBlock);
-        }
-        System.out.println("Block No: "+blockChain.size());
         return "success";
 
     }
+
+    @PostMapping("/evaluatetemperature")
+    public String evaluatetemperature() {
+        try {
+            String url = "http://localhost:8082/evaluate";
+            String result = "";
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setHeader("Content-type", "application/json");
+
+            CloseableHttpClient closeableHttpClient = HttpClients.createDefault();
+            CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute(httpPost);
+            HttpEntity entity = closeableHttpResponse.getEntity();
+            if (entity != null) {
+                result = EntityUtils.toString(entity);
+                System.out.println(result);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "success";
+    }
+
+    @PostMapping("/evaluateparkingspace")
+    public String evaluateparkingspace() {
+        try {
+            String url = "http://localhost:8083/evaluate";
+            String result = "";
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setHeader("Content-type", "application/json");
+
+            CloseableHttpClient closeableHttpClient = HttpClients.createDefault();
+            CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute(httpPost);
+            HttpEntity entity = closeableHttpResponse.getEntity();
+            if (entity != null) {
+                result = EntityUtils.toString(entity);
+                System.out.println(result);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "node evaluated";
+    }
+
+    @PostMapping("/evaluate")
+    public String evaluate() {
+        String result = "";
+        for (SmartHome smartHome : smartHomes) {
+                if (smartHome.getDoorLocks() > 0) {
+
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+                        String url = "http://localhost:8084/blockchain";
+                        HttpPost httpPost = new HttpPost(url);
+                        httpPost.setHeader("Content-type", "application/json");
+                        String json = "{" +
+                                "\"hash\":" + "\"" + "" + "\"," +
+                                "\"previousHash\":" + "\"" + "" + "\"," +
+                                "\"description\":" + "\"" + "SmartHome Block" + "\"," +
+                                "\"data\":" + "{" +
+                                "\"timestamp\":" + "\"" + smartHome.getTimestamp() + "\"," +
+                                "\"smokeDetectors\":" + "" + smartHome.getSmokeDetectors() + "," +
+                                "\"doorLocks\":" + "" + smartHome.getDoorLocks() + "," +
+                                "\"windows\":" + "" + smartHome.getWindows() + "," +
+                                "\"homeAppliances\":" + "" + smartHome.getHomeAppliances() + "," +
+                                "\"lightBulbs\":" + "" + smartHome.getLightBulbs() +
+                                "} ," +
+                                "\"timeStamp\":" + new Date().getTime() + "," +
+                                "\"nonce\":" + 0 + "," +
+                                "\"node\":" + 1 +
+                                "}";
+                        System.out.println(json);
+                        httpPost.setEntity(new StringEntity(json));
+                        CloseableHttpClient closeableHttpClient = HttpClients.createDefault();
+                        CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute(httpPost);
+                        HttpEntity entity = closeableHttpResponse.getEntity();
+                        if (entity != null) {
+                            result = EntityUtils.toString(entity);
+                            System.out.println(result);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    System.out.println(smartHome.getDoorLocks() + " Smart home data is verified and found invalid");
+                }
+        }
+        return "node evaluated";
+    }
+
 
     @GetMapping("/seeddata")
     public void insertData() {
