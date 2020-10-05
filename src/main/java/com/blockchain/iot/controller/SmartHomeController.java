@@ -1,4 +1,4 @@
-package com.blockchain.iot;
+package com.blockchain.iot.controller;
 
 import com.blockchain.iot.data.TestData;
 import com.blockchain.iot.model.SmartHome;
@@ -28,14 +28,6 @@ public class SmartHomeController {
 
     @Autowired
     RestTemplate restTemplate;
-
- /*   @GetMapping("/get-data")
-    public String getData() {
-
-        String responseFromNode2 = restTemplate.getForObject("http://localhost:8082/get-respose-from-2", String.class);
-
-        return "response from node 1  sum \n" + responseFromNode2;
-    }*/
 
     @GetMapping("/smarthomes")
     public List<SmartHome> getSmartHome() {
@@ -99,7 +91,7 @@ public class SmartHomeController {
 
                     try {
                         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-                        String url = "http://localhost:8084/blockchain";
+                        String url = "http://localhost:8082/blockchain";
                         HttpPost httpPost = new HttpPost(url);
                         httpPost.setHeader("Content-type", "application/json");
                         String json = "{" +
@@ -137,7 +129,6 @@ public class SmartHomeController {
         }
         return "node evaluated";
     }
-
 
     @GetMapping("/seeddata")
     public void insertData() {

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Smart Home</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="jquery-3.5.1.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.css
+    "/>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/dataTables.bootstrap4.min.css"/>
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/dataTables.bootstrap4.min.js"></script>
+
+</head>
+<body>
+
+<div class="container">
+    <br>
+    <h2 class="text-center">Smart Home Node</h2>
+
+    <div class="col-sm-12">
+        <h3 class="text-center">Evaluate</h3>
+        <table class="table table-striped table-bordered" id="trust" style="width:100%">
+            <thead>
+            <th>Node</th>
+            <th>Name of service</th>
+            <th>Name of service provider</th>
+            <th>Name of rating criteria</th>
+            <th>Rating score (0-1)</th>
+            <th>Action</th>
+            <th>Trust Score</th>
+            </thead>
+
+            <tbody>
+            <tr th:each="data : ${service}">
+                <td th:text="${data.node}"></td>
+                <td th:text="${data.serviceName}"></td>
+                <td th:text="${data.serviceProvider}"></td>
+                <td th:text="${data.ratingCriteria}"></td>
+                <td th:text="${data.score}"></td>
+                <td th:if="${data.node != 'Smart Home Node'}"><a th:href="${data.serviceName}" class="btn btn-primary">Request
+                    data</a></td>
+                <td th:if="${data.node != 'Smart Home Node'}"><a th:href="${'/evaluate'} + '?node=' + ${data.node}"
+                                                                 class="btn btn-primary">Evaluate</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <br><br>
+
+
+    <div class="col-sm-12">
+
+        <table id="example" class="table table-striped table-bordered" style="width:100%">
+            <thead>
+            <th>Timestamp</th>
+            <th>Smoke Detectors</th>
+            <th>Door Locks</th>
+            <th>Windows</th>
+            <th>Home Appliances</th>
+            <th>Light Bulbs</th>
+            </thead>
+
+            <tbody>
+            <tr th:each="data : ${smartHome}">
+                <td th:text="${data.timestamp}"></td>
+                <td th:text="${data.smokeDetectors}"></td>
+                <td th:text="${data.doorLocks}"></td>
+                <td th:text="${data.windows}"></td>
+                <td th:text="${data.homeAppliances}"></td>
+                <td th:text="${data.lightBulbs}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+
+    </div>
+</div>
+</body>
+<script>
+    $(document).ready(function () {
+        /* $('#trust').DataTable();*/
+        $('#example').DataTable();
+    });
+</script>
+
+</html>
