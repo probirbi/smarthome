@@ -1,5 +1,6 @@
 package com.blockchain.iot.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +16,6 @@ public class Block {
     private BlockType blockType;
     private int blockNumber;
     private Object data;
-    //   private String description;
     //   @JsonInclude(JsonInclude.Include.NON_NULL)
     //   private Sensor sensor;
     //   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -32,14 +32,19 @@ public class Block {
     private String serviceProvidedBy;
     private String blockCreatedBy;
     private long timeStamp;
+  //  @JsonIgnore
     private int nonce;
-    private int node;
+  //  @JsonIgnore
+    private Integer node;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Double trustScore;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Double rating;
     //@JsonInclude(JsonInclude.Include.NON_EMPTY)
     //private String comment;
+
+    public Block() {
+    }
 
     public Block(Object data, BlockType blockType, String previousHash, long timeStamp, int node, String blockCreatedBy) {
         this.blockType = blockType;

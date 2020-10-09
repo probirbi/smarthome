@@ -12,6 +12,9 @@ public class Trust {
     private String serviceProvider;
     private String ratingCriteria;
     private double score;
+    private Double currentTrustScore;
+    private Double latestTrustScore;
+    private String randomSelected;
 
     public Trust(String node, String serviceName, String serviceProvider, String ratingCriteria, double score) {
         this.node = node;

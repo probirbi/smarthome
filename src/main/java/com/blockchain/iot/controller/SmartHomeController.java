@@ -97,7 +97,7 @@ public class SmartHomeController {
                         String json = "{" +
                                 "\"hash\":" + "\"" + "" + "\"," +
                                 "\"previousHash\":" + "\"" + "" + "\"," +
-                                "\"description\":" + "\"" + "SmartHome Block" + "\"," +
+                                //"\"description\":" + "\"" + "SmartHome Block" + "\"," +
                                 "\"data\":" + "{" +
                                 "\"timestamp\":" + "\"" + smartHome.getTimestamp() + "\"," +
                                 "\"smokeDetectors\":" + "" + smartHome.getSmokeDetectors() + "," +
@@ -106,9 +106,9 @@ public class SmartHomeController {
                                 "\"homeAppliances\":" + "" + smartHome.getHomeAppliances() + "," +
                                 "\"lightBulbs\":" + "" + smartHome.getLightBulbs() +
                                 "} ," +
-                                "\"timeStamp\":" + new Date().getTime() + "," +
-                                "\"nonce\":" + 0 + "," +
-                                "\"node\":" + 1 +
+                                //"\"timeStamp\":" + new Date().getTime() + "," +
+                                //"\"nonce\":" + 0 + "," +
+                                //"\"node\":" + 1 +
                                 "}";
                         System.out.println(json);
                         httpPost.setEntity(new StringEntity(json));

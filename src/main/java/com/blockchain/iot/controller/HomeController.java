@@ -14,25 +14,25 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.text.DecimalFormat;
+import java.util.*;
 
 @Controller
 public class HomeController {
 
     List<Services> services = new ArrayList<Services>();
 
-    String[] broadCastUrls = {"http://localhost:8081/broadcast", "http://localhost:8082/broadcast"};
+    @Value("${broadcast.ports}")
+    String broadcastPorts;
+
+   // String[] broadCastUrls = {"http://localhost:8081/broadcast", "http://localhost:8082/broadcast"};
 
     @GetMapping("/home")
     public String getData(HttpServletRequest request, Model model) {
@@ -48,7 +48,7 @@ public class HomeController {
             service.setNode("Temperature Node");
             service.setServiceName("temperatures");
             service.setServiceProvider("Temperature Node");
-            service.setRatingCriteria("evaluationLogicOne");
+            service.setRatingCriteria("serviceSatisfaction");
             services.add(service);
 
             /*trust = new Services();
@@ -88,6 +88,7 @@ public class HomeController {
                 }.getType();
                 Block block = gson.fromJson(result, type);
             //  model.addAttribute("sensor", sensor);
+                block = addInLocalBlockChain(block);
                 broadcast(block);
 
                 System.out.println("block broadcast");
@@ -137,10 +138,44 @@ public class HomeController {
         return "redirect:/home";
     }
 
+    private Block addInLocalBlockChain(Block block) {
+
+        try {
+                String url = "http://localhost:8082/addInLocalBlockChain";
+
+                System.out.println(url);
+                HttpPost httpPost = new HttpPost(url);
+                httpPost.setHeader("Content-type", "application/json");
+                ObjectMapper mapper = new ObjectMapper();
+                String json = mapper.writeValueAsString(block);
+                httpPost.setEntity(new StringEntity(json));
+
+                CloseableHttpClient closeableHttpClient = HttpClients.createDefault();
+                CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute(httpPost);
+                HttpEntity responseEntity = closeableHttpResponse.getEntity();
+
+                if (responseEntity != null) {
+                    String result = EntityUtils.toString(responseEntity);
+                    if (result != null && !result.equals("") && !result.equals("{}")) {
+                        Gson gson = new Gson();
+                        Type type = new TypeToken<Block>() {
+                        }.getType();
+                        block = gson.fromJson(result, type);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return block;
+    }
+
     private void broadcast(Block block) {
+        String[] broadCastUrls = broadcastPorts.split(",");
         for (int i = 0; i < broadCastUrls.length; i++) {
             try {
-                String url = broadCastUrls[i];
+                String url = "http://localhost:" +  broadCastUrls[i]  + "/broadcast";
+
+                System.out.println(url);
                 HttpPost httpPost = new HttpPost(url);
                 httpPost.setHeader("Content-type", "application/json");
                 ObjectMapper mapper = new ObjectMapper();
@@ -160,9 +195,181 @@ public class HomeController {
         }
     }
 
+    @GetMapping("/gettrustscore")
+    public String getTrustScore(@RequestParam(required=false) Integer node, Model model, HttpServletRequest request) throws JsonProcessingException {
+        HashMap<Integer, Double> map = new HashMap<Integer, Double>();
+        HashMap<Integer, Integer> mapCount = new HashMap<Integer, Integer>();
+        HashMap<Integer, Double> mapTrustScore = new HashMap<Integer, Double>();
+        HashMap<Integer, List<String>> mapBlock = new HashMap<Integer, List<String>>();
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        Integer selectedNode = 0;
+        List<Block> blockChainCopy = new ArrayList<Block>();
+
+        try {
+            String url = "http://localhost:8082/blockchain";
+            String result = "";
+            HttpGet httpGet = new HttpGet(url);
+
+            CloseableHttpClient closeableHttpClient = HttpClients.createDefault();
+            CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute(httpGet);
+            HttpEntity entity = closeableHttpResponse.getEntity();
+            if (entity != null) {
+                result = EntityUtils.toString(entity);
+                System.out.println(result);
+                Gson gson = new Gson();
+                Type type = new TypeToken<List<Block>>() {
+                }.getType();
+                blockChainCopy = gson.fromJson(result, type);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        for (int i = 0; i < blockChainCopy.size(); i++) {
+            if (blockChainCopy.get(i).getBlockType().equals(BlockType.RATING)) {
+                if (lessThanOneHour(blockChainCopy.get(i).getTimeStamp())) {
+                    continue;
+                }
+                if (map.get(blockChainCopy.get(i).getNode()) != null) {
+                    map.put(blockChainCopy.get(i).getNode(), map.get(blockChainCopy.get(i).getNode()) + blockChainCopy.get(i).getRating());
+                } else {
+                    map.put(blockChainCopy.get(i).getNode(), blockChainCopy.get(i).getRating());
+                }
+                if (mapCount.get(blockChainCopy.get(i).getNode()) != null) {
+                    mapCount.put(blockChainCopy.get(i).getNode(), mapCount.get(blockChainCopy.get(i).getNode()) + 1);
+                } else {
+                    mapCount.put(blockChainCopy.get(i).getNode(), 1);
+                }
+                if (mapBlock.get(blockChainCopy.get(i).getNode()) != null) {
+                    List<String> blocks = (List<String>) mapBlock.get(blockChainCopy.get(i).getNode());
+                    blocks.add(blockChainCopy.get(i).getBlockNumber() + "");
+                    mapBlock.put(blockChainCopy.get(i).getNode(), blocks);
+                    System.out.println(" block " + mapBlock.get(blockChainCopy.get(i).getNode()));
+                } else {
+                    List<String> blocks = new ArrayList<String>();
+                    blocks.add(blockChainCopy.get(i).getBlockNumber() + "");
+                    mapBlock.put(blockChainCopy.get(i).getNode(), blocks);
+                    System.out.println(" block one " + mapBlock.get(blockChainCopy.get(i).getNode()));
+                }
+            }
+        }
+        Iterator it = map.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            Double trustScore = 0.0;
+            if (mapCount.get(pair.getKey()) != null) {
+                trustScore = (Double) pair.getValue() / mapCount.get(pair.getKey());
+                trustScore = Double.parseDouble(decimalFormat.format(trustScore));
+            }
+            if (trustScore > 0.6) {
+                mapTrustScore.put((Integer) pair.getKey(), trustScore);
+            }
+        }
+
+        it = mapTrustScore.entrySet().iterator();
+        List<Trust> trusts = new ArrayList<Trust>();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            System.out.println("Node : " + pair.getKey() + "    Trust Score : " + pair.getValue());
+            Trust trust = new Trust();
+            trust.setNode(pair.getKey() + "" );
+            trust.setCurrentTrustScore((Double) pair.getValue());
+            trusts.add(trust);
+        }
+        model.addAttribute(mapTrustScore);
+        selectedNode = trustConsensusAlgorithm(mapTrustScore);
+        for (Trust trust : trusts) {
+            if (trust.getNode().equals(selectedNode + "")) {
+                trust.setRandomSelected("Yes");
+            }
+        }
+      //  if (request.getSession().getAttribute("trusts") != null) {
+      //      List<Trust> sessionTrusts = new ArrayList<Trust>();
+      //      for (Trust current : sessionTrusts) {
+      //          for (Trust newTrust : trusts) {
+      //              if (newTrust.getNode().equals(current.getNode())) {
+      //                  newTrust.setCurrentTrustScore(current.getLatestTrustScore());
+      //              }
+      //          }
+      //      }
+      //  }
+
+        request.getSession().setAttribute("trusts", trusts);
+        System.out.println("block") ;
+        System.out.println(mapBlock.get(selectedNode));
+        if (selectedNode > 0) {
+            Block trustScoreBlock = new Block();
+            trustScoreBlock.setBlockCreatedBy("SmartHomeNode");
+            trustScoreBlock.setBlockType(BlockType.TRUST);
+            trustScoreBlock.setNode(selectedNode);
+            trustScoreBlock.setData("Rating Block Numbers " + mapBlock.get(selectedNode) + "");
+            trustScoreBlock.setPreviousHash(blockChainCopy.get(blockChainCopy.size() - 1).getHash());
+            trustScoreBlock.setTimeStamp(new Date().getTime());
+            trustScoreBlock.setTrustScore((Double) mapTrustScore.get(selectedNode));
+            try {
+                String url = "http://localhost:8082/blockchain?create=false";
+                HttpPost httpPost = new HttpPost(url);
+                httpPost.setHeader("Content-type", "application/json");
+                ObjectMapper mapper = new ObjectMapper();
+                String json = mapper.writeValueAsString(trustScoreBlock);
+                System.out.println(json);
+                httpPost.setEntity(new StringEntity(json));
+
+                CloseableHttpClient closeableHttpClient = HttpClients.createDefault();
+                CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute(httpPost);
+                HttpEntity responseEntity = closeableHttpResponse.getEntity();
+
+                if (responseEntity != null) {
+                    String result = EntityUtils.toString(responseEntity);
+                    if (result != null && !result.equals("") && !result.equals("{}")) {
+                        Gson gson = new Gson();
+                        Type type = new TypeToken<Block>() {
+                        }.getType();
+                        trustScoreBlock = gson.fromJson(result, type);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            broadcast(trustScoreBlock);
+        }
+
+        model.addAttribute("trusts",trusts);
+        model.addAttribute("selectedNode", selectedNode);
+        System.out.println("Random selected node is : " + selectedNode);
+        ObjectMapper mapper = new ObjectMapper();
+
+        String json = mapper.writeValueAsString(mapTrustScore);
+        model.addAttribute("json", json);
+
+        init();
+        model.addAttribute("service",services);
+        return "home";
+    }
+
+    private boolean lessThanOneHour(long timestamp) {
+        long sixtyMinutes = System.currentTimeMillis() - 2 * 60 * 1000;
+        if (timestamp < sixtyMinutes) {
+            return true;
+        }
+        return false;
+    }
+
+    private Integer trustConsensusAlgorithm(HashMap<Integer, Double>  mapTrustScore) {
+        Object[] crunchifyKeys = mapTrustScore.keySet().toArray();
+
+        System.out.println("map size " + crunchifyKeys.length);
+        if (crunchifyKeys.length > 0) {
+            Object key = crunchifyKeys[new Random().nextInt(crunchifyKeys.length)];
+            System.out.println("************ Random Value ************ \n" + key + " :: " + mapTrustScore.get(key));
+            return (Integer) key;
+        }
+        return 0;
+    }
+
     @GetMapping("/evaluate")
     public String evaluate(@RequestParam String node, Model model) {
-        int nodeInt = 0;
+        Integer nodeInt = 0;
         if (node.equals("Temperature Node")) {
             nodeInt = 1;
         }
@@ -257,11 +464,17 @@ public class HomeController {
                 Double temperatureCelsius = Double.parseDouble(json);
 
                 System.out.println(temperatureCelsius);
-                if (temperatureCelsius >= 10 && temperatureCelsius <= 20) {
+                if (temperatureCelsius > 10 && temperatureCelsius <= 15) {
                     return 1.0;
-                } else if (temperatureCelsius > 20 && temperatureCelsius <= 30) {
+                } else if (temperatureCelsius > 5 && temperatureCelsius <= 10) {
+                    return 0.9;
+                } else if (temperatureCelsius > 15 && temperatureCelsius <= 20) {
+                    return 0.8;
+                }else if(temperatureCelsius>0 && temperatureCelsius<=5){
                     return 0.7;
-                } else {
+                }else if(temperatureCelsius>20 && temperatureCelsius<=30){
+                    return 0.6;
+                }else {
                     return 0.5;
                 }
             }
@@ -280,6 +493,52 @@ public class HomeController {
         } else {
             return 0.5;
         }
+    }
+
+    @GetMapping("/getlatesttrustscore")
+    public String getLatestTrustScore(@RequestParam(required=false) Integer node, Model model, HttpServletRequest request) throws JsonProcessingException {
+        List<Block> blockChainCopy = new ArrayList<Block>();
+        HashMap<Integer, Double> mapTrustScore = new HashMap<Integer, Double>();
+
+        try {
+            String url = "http://localhost:8082/blockchain";
+            String result = "";
+            HttpGet httpGet = new HttpGet(url);
+
+            CloseableHttpClient closeableHttpClient = HttpClients.createDefault();
+            CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute(httpGet);
+            HttpEntity entity = closeableHttpResponse.getEntity();
+            if (entity != null) {
+                result = EntityUtils.toString(entity);
+                System.out.println(result);
+                Gson gson = new Gson();
+                Type type = new TypeToken<List<Block>>() {
+                }.getType();
+                blockChainCopy = gson.fromJson(result, type);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        List<Trust> trusts = new ArrayList<Trust>();
+        for (int i = 0; i < blockChainCopy.size(); i++) {
+            if (blockChainCopy.get(i).getBlockType().equals(BlockType.TRUST)) {
+                mapTrustScore.put(blockChainCopy.get(i).getNode(), blockChainCopy.get(i).getTrustScore());
+            }
+        }
+        Iterator it = mapTrustScore.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pairLatest = (Map.Entry) it.next();
+            System.out.println("Node : " + pairLatest.getKey() + "    Trust Score : " + pairLatest.getValue());
+            Trust trust = new Trust();
+            trust.setNode(pairLatest.getKey() + "" );
+            trust.setLatestTrustScore((Double) pairLatest.getValue());
+            trusts.add(trust);
+        }
+        request.getSession().setAttribute("trusts", trusts);
+        model.addAttribute("trusts",trusts);
+        init();
+        model.addAttribute("service",services);
+        return "home";
     }
 
     private void updateBlockchain(String hash, double rating) {

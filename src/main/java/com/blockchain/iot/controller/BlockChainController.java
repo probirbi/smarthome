@@ -1,6 +1,7 @@
 package com.blockchain.iot.controller;
 
 import com.blockchain.iot.model.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,9 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @RestController
 public class BlockChainController {
@@ -48,11 +47,26 @@ public class BlockChainController {
         return blockChain;
     }
 
+
+    @PostMapping("/addInLocalBlockChain")
+    public Block addInLocalBlockChain(@RequestBody Block block) {
+        block.mineBlock(prefix);
+        if (blockChain.size() == 0) {
+            block.setPreviousHash("0");
+        } else {
+            block.setPreviousHash(blockChain.get(blockChain.size() - 1).getHash());
+        }
+
+        block.setBlockNumber(blockChain.size() + 1);
+        blockChain.add(block);
+        return block;
+    }
+
     @PostMapping("/broadcast")
     public Block broadcast(@RequestBody Block block) {
       //  if (block.getNode() >= 1 && block.getNode() <= 3) {
             if (blockChain.size() > 0) {
-                if (validate(block)) {
+                if (!exists(block) && validate(block)) {
                     blockChain.add(block);
                 }
             } else {
@@ -62,9 +76,18 @@ public class BlockChainController {
         return block;
     }
 
+    private boolean exists(Block block) {
+        for (int i = 0; i < blockChain.size(); i++) {
+            if (block.getHash().equals(blockChain.get(i).getHash())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean validate(Block block) {
         for (int i = 0; i < blockChain.size(); i++) {
-            if (block.getPreviousHash().equals(blockChain.get(i).getHash())) {
+       if (block.getPreviousHash().equals(blockChain.get(i).getHash())) {
                 return true;
             }
         }
@@ -100,43 +123,8 @@ public class BlockChainController {
         }
     }
 
-    @PostMapping("/blockchain/updaterating")
-    public String updateBlockchain(@RequestBody Block block) {
-
-      //  System.out.println("updaterating");
-      //  System.out.println(block.getHash());
-       // System.out.println(block.getRating());
-        for (int i = 0; i < blockChain.size(); i++) {
-            if (block.getHash().equals(blockChain.get(i).getHash())) {
-                blockChain.get(i).setRating(block.getRating());
-                break;
-            }
-        }
-        return "rating updated in blockchain";
-    }
-
-    @PostMapping("/blockchainevaluatenode")
-    public String saveBlockchain(@RequestParam int node) {
-        for (int i = 0; i < blockChain.size(); i++) {
-            if (node == blockChain.get(i).getNode()) {
-                switch (node) {
-                    case 1 :
-                        evaluationLogicOne(blockChain.get(i));
-                        break;
-                    case 2 :
-                        evaluationLogicTwo(blockChain.get(i));
-                        break;
-                    case 3 :
-                        evaluationLogicThree(blockChain.get(i));
-                        break;
-                }
-            }
-        }
-        return "Node " + node + " evaluated";
-    }
-
     @GetMapping("/evaluatenode")
-    public List<Trust> evaluatenode(@RequestParam int node, @RequestParam int nodeFrom) {
+    public List<Trust> evaluatenode(@RequestParam Integer node, @RequestParam Integer nodeFrom) {
 
         DecimalFormat decimalFormat = new DecimalFormat("#.##");
 
