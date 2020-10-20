@@ -15,6 +15,7 @@ public class Block {
     private String previousHash;
     private BlockType blockType;
     private int blockNumber;
+    private String blockCreatedBy;
     private Object data;
     //   @JsonInclude(JsonInclude.Include.NON_NULL)
     //   private Sensor sensor;
@@ -30,11 +31,10 @@ public class Block {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     // private String evaluatedBy;
     private String serviceProvidedBy;
-    private String blockCreatedBy;
     private long timeStamp;
-  //  @JsonIgnore
+    @JsonIgnore
     private int nonce;
-  //  @JsonIgnore
+   // @JsonIgnore
     private Integer node;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Double trustScore;

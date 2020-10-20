@@ -33,7 +33,7 @@ public class TestData {
                 HttpPost httpPost = new HttpPost(url);
                 httpPost.setHeader("Content-type", "application/json");
                 String json = "{" +
-                        "\"timestamp\":" + "\"" + sdf.format(new Date()) + "\"," +
+                        "\"timeStamp\":" + "\"" + sdf.format(new Date()) + "\"," +
                         "\"smokeDetectors\":" + "" +  smokeDetectors +","+
                         "\"doorLocks\":" + "" +  doorLocks +","+
                         "\"windows\":" + "" + windows + "," +

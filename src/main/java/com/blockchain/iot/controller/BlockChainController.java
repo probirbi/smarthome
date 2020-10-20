@@ -1,6 +1,8 @@
 package com.blockchain.iot.controller;
 
 import com.blockchain.iot.model.*;
+import com.blockchain.iot.util.BlockChainAlgorithm;
+import com.blockchain.iot.util.DateUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.*;
@@ -66,32 +68,20 @@ public class BlockChainController {
     public Block broadcast(@RequestBody Block block) {
       //  if (block.getNode() >= 1 && block.getNode() <= 3) {
             if (blockChain.size() > 0) {
-                if (!exists(block) && validate(block)) {
-                    blockChain.add(block);
+                if (!BlockChainAlgorithm.exists(block, blockChain) && BlockChainAlgorithm.validate(block, blockChain)) {
+                    if (block.getBlockType().equals(BlockType.TRUST)) {
+                        if (BlockChainAlgorithm.validateTrustBlock(block, blockChain)) {
+                            blockChain.add(block);
+                        }
+                    } else {
+                        blockChain.add(block);
+                    }
                 }
             } else {
                 blockChain.add(block);
             }
       //  }
         return block;
-    }
-
-    private boolean exists(Block block) {
-        for (int i = 0; i < blockChain.size(); i++) {
-            if (block.getHash().equals(blockChain.get(i).getHash())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean validate(Block block) {
-        for (int i = 0; i < blockChain.size(); i++) {
-       if (block.getPreviousHash().equals(blockChain.get(i).getHash())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @PostMapping("/blockchain")
@@ -153,8 +143,6 @@ public class BlockChainController {
       //          System.out.println("updated");
             }
         }
-
-
 
         double temperatureScore = 0.0;
         double smartHomeScore = 0.0;

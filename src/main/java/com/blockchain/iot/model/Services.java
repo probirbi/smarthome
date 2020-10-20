@@ -8,6 +8,7 @@ import lombok.Setter;
 public class Services {
     private String node;
     private String serviceName;
+    private String autoGenerate;
     private String serviceProvider;
     private String ratingCriteria;
     private double score;

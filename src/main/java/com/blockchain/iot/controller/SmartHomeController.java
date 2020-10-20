@@ -1,8 +1,12 @@
 package com.blockchain.iot.controller;
 
 import com.blockchain.iot.data.TestData;
+import com.blockchain.iot.model.Block;
 import com.blockchain.iot.model.SmartHome;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -15,11 +19,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.thymeleaf.util.StringUtils;
 
+import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 @RestController
 public class SmartHomeController {
@@ -33,7 +41,6 @@ public class SmartHomeController {
     public List<SmartHome> getSmartHome() {
            return smartHomes;
     }
-
     @PostMapping("/smarthomes")
     public String saveSmartHome(@RequestBody SmartHome smartHome) {
         smartHomes.add(smartHome);
@@ -128,6 +135,87 @@ public class SmartHomeController {
                 }
         }
         return "node evaluated";
+    }
+
+    @GetMapping("/smarthome")
+    public Block getSmartHome(HttpServletRequest request){
+
+        String requestedBy=request.getParameter("requestedBy");
+        SmartHome smartHome= new SmartHome();
+        Random random = new Random();
+        int rangeMin = 0;
+        int rangeMax = 20;
+
+        SimpleDateFormat sdf=new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        int smokeDetectors = random.nextInt((rangeMax - rangeMin) + 1) + rangeMin;
+        int doorLocks = random.nextInt((rangeMax - rangeMin) + 1) + rangeMin;
+        int windows = random.nextInt((rangeMax - rangeMin) + 1) + rangeMin;
+        int homeAppliances = random.nextInt((rangeMax - rangeMin) + 1) + rangeMin;
+        int lightBulbs = random.nextInt((rangeMax - rangeMin) + 1) + rangeMin;
+
+        smartHome.setTimestamp(sdf.format(new Date()));
+        smartHome.setSmokeDetectors(smokeDetectors);
+        smartHome.setDoorLocks(doorLocks);
+        smartHome.setWindows(windows);
+        smartHome.setHomeAppliances(homeAppliances);
+        smartHome.setLightBulbs(lightBulbs);
+        smartHomes.add(smartHome);
+
+        Block block = null;
+
+        try {
+            String url = "http://localhost:8082/blockchain?create=false";
+            HttpPost httpPost=new HttpPost(url);
+            httpPost.setHeader("Content-type", "application/json");
+            String json="{"+
+                    "\"hash\":" + "\"" + "" + "\"," +
+                    "\"previousHash\":" + "\"" + "" + "\"," +
+                    "\"blockType\":" + "\"" + "SERVICE" + "\"," +
+                    "\"blockNumber\":" + "0," +
+                    "\"data\":" + "{"+
+                            "\"timeStamp\":" + "\"" + sdf.format(new Date()) + "\"," +
+                            "\"smokeDetectors\":" + smartHome.getSmokeDetectors() + "," +
+                            "\"doorLocks\":" + smartHome.getDoorLocks() + "," +
+                            "\"windows\":" + smartHome.getWindows() + "," +
+                            "\"homeAppliances\":" + smartHome.getHomeAppliances() + "," +
+                            "\"lightBulbs\":" + smartHome.getLightBulbs() +
+                    "},"+
+                    "\"requestTimeStamp\":" + new Date().getTime() + "," +
+                    "\"responseTimeStamp\":" + new Date().getTime() + "," +
+                    "\"serviceRequestedBy\":" + "\"" + requestedBy + "\"," +
+                    "\"serviceResponseBy\":" + "\"" + "SmartHomeNode" + "\"," +
+                    "\"ratingDoneBy\":" + "\"" + "" + "\"," +
+                    "\"evaluatedBy\":" + "\"" + "" + "\"," +
+                    "\"serviceProvidedBy\":" + "\"" + "SmartHomeNode" + "\"," +
+                    "\"blockCreatedBy\":" + "\"" + requestedBy + "\"," +
+                    "\"timeStamp\":" + new Date().getTime() + "," +
+                    "\"nonce\":" + 0 + "," +
+                    "\"node\":" + 2 + "," +
+                    "\"trustScore\":" + null + "," +
+                    "\"rating\":" + null + "," +
+                    "\"comment\":" + "\"" + "" + "\"" +
+            "}";
+
+            System.out.println(json);
+            httpPost.setEntity(new StringEntity(json));
+            CloseableHttpClient closeableHttpClient= HttpClients.createDefault();
+            CloseableHttpResponse closeableHttpResponse=closeableHttpClient.execute(httpPost);
+            HttpEntity responseEntity=closeableHttpResponse.getEntity();
+
+            if(responseEntity!=null){
+                String result= EntityUtils.toString(responseEntity);
+                System.out.println(result);
+
+                if(result!=null && !result.equals("") && !result.equals("{}")){
+                    Gson gson=new Gson();
+                    Type type=new TypeToken<Block>(){}.getType();
+                    block=gson.fromJson(result, type);
+                }
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return block;
     }
 
     @GetMapping("/seeddata")

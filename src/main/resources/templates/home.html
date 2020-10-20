@@ -20,7 +20,7 @@
     <div class="row">
         <div class="col-sm-4.5">
             <!--<h3 class="text-center">Node</h3>-->
-            <a th:href="${'/gettrustscore'}" class="btn btn-primary">Get Current Trust Score</a>
+            <a th:href="${'/getcurrenttrustscore'}" class="btn btn-primary">Get Current Trust Score</a>
             <table class="table table-striped table-bordered" id="trust" style="width:100%">
                 <thead>
                 <th>Node</th>
@@ -45,7 +45,7 @@
                 <th>Latest Trust Score</th>
                 </thead>
                 <tbody>
-                <tr th:each="trust : ${trusts}">
+                <tr th:each="trust : ${latest}">
                     <td th:text="${trust.node}"></td>
                     <td th:text="${trust.latestTrustScore}"></td>
                 </tr>
@@ -61,26 +61,26 @@
                 <th>Current Rating Score</th>
                 </thead>
                 <tbody>
-                <!-- <tr th:each="trust : ${trusts}">
-                     <td th:text="${trust.node}"></td>
-                     <td th:text="${trust.latestTrustScore}"></td>
-                 </tr>-->
+                 <tr th:each="rating : ${currentRating}">
+                    <!-- <td th:text="${rating.node}"></td>-->
+                     <td th:text="${rating.currentRatingScore}"></td>
+                 </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="col-sm-2.5">
-            <a th:href="${'/getlatesttrustscore'}" class="btn btn-primary">Latest Rating Score</a>
+            <a th:href="${'/getlatestratingscore'}" class="btn btn-primary">Latest Rating Score</a>
             <table class="table table-striped table-bordered" id="trust" style="width:100%">
                 <thead>
                 <!--<th>Node</th>-->
                 <th>Latest Rating Score</th>
                 </thead>
                 <tbody>
-                <!-- <tr th:each="trust : ${trusts}">
-                     <td th:text="${trust.node}"></td>
-                     <td th:text="${trust.latestTrustScore}"></td>
-                 </tr>-->
+                 <tr th:each="rating : ${latestRating}">
+                     <!--<td th:text="${rating.node}"></td>-->
+                     <td th:text="${rating.latestRatingScore}"></td>
+                 </tr>
                 </tbody>
             </table>
         </div>
@@ -93,7 +93,7 @@
     <div class="col-sm-12">
         <div class="row">
             <div class="col-sm-2"><a th:href="${'/gettrustevaluation'}" class="btn btn-primary">Trust Evolution</a></div>
-            <div class="col-sm-8 text-center">Evaluate</div>
+           <!-- <div class="col-sm-8 text-center">Evaluate</div>-->
         </div>
 
         <!--<h3 class="text-center">Evaluate</h3>-->
@@ -105,6 +105,7 @@
             <th>Name of rating criteria</th>
             <th>Rating score (0-1)</th>
             <th>Action</th>
+            <th>Automatically</th>
             <!--<th>Trust Score</th>-->
             </thead>
 
@@ -119,11 +120,48 @@
                     data</a></td>
                 <!--    <td th:if="${data.node != 'Smart Home Node'}"><a th:href="${'/evaluate'} + '?node=' + ${data.node}"
                                                                      class="btn btn-primary">Evaluate</a></td>  -->
+                <td th:if="${data.node != 'Smart Home Node'}"><a th:href="${data.autoGenerate}" class="btn btn-primary">Auto generate</a></td>
             </tr>
             </tbody>
         </table>
     </div>
     <br>
+
+   <!-- <div>
+        <td><a th:href="${'/autogeneratetemperatures'}" class="btn btn-primary">Auto generate</a></td>
+    </div>-->
+    <br>
+
+    <!--&lt;!&ndash;Generate Automatically 1000 Blocks&ndash;&gt;
+
+    <div class="col-sm-12">
+        <table class="table table-striped table-bordered" id="trust" style="width:100%">
+            <thead>
+            <th>Node</th>
+            <th>Name of service</th>
+            <th>Name of service provider</th>
+            <th>Name of rating criteria</th>
+            <th>Rating score (0-1)</th>
+            <th>Action</th>
+            &lt;!&ndash;<th>Trust Score</th>&ndash;&gt;
+            </thead>
+
+            <tbody>
+            <tr th:each="data : ${service}">
+                <td th:text="${data.node}"></td>
+                <td th:text="${data.serviceName}"></td>
+                <td th:text="${data.serviceProvider}"></td>
+                <td th:text="${data.ratingCriteria}"></td>
+                <td th:text="${data.score}"></td>
+                <td th:if="${data.node != 'Smart Home Node'}"><a th:href="${data.serviceName}" class="btn btn-primary">Request
+                    data</a></td>
+                &lt;!&ndash;    <td th:if="${data.node != 'Smart Home Node'}"><a th:href="${'/evaluate'} + '?node=' + ${data.node}"
+                                                                     class="btn btn-primary">Evaluate</a></td>  &ndash;&gt;
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <br>-->
 
 
     <!--<div class="col-sm-12">
